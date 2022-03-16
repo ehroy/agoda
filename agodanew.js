@@ -5,7 +5,7 @@ const cheerio = require("cheerio");
 const random = require("random-name");
 const delay = require("delay");
 
-const keyCaptcha = readline.question("[+] Input Apikey 2Captcha : ");
+const keyCaptcha = "";
 var password = `Kaserinas123`;
 
 const randstr = (length) =>
