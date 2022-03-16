@@ -2,6 +2,8 @@ const fetch = require("node-fetch");
 const fs = require("fs-extra");
 const readline = require("readline-sync");
 const cheerio = require("cheerio");
+const random = require("random-name");
+const delay = require("delay");
 
 const keyCaptcha = "";
 var password = `Kaserinas123`;
@@ -9,7 +11,8 @@ var password = `Kaserinas123`;
 const randstr = (length) =>
   new Promise((resolve, reject) => {
     var text = "";
-    var possible = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    var possible =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
 
     for (var i = 0; i < length; i++)
       text += possible.charAt(Math.floor(Math.random() * possible.length));
@@ -17,19 +20,6 @@ const randstr = (length) =>
     resolve(text);
   });
 
-const generateIndoName = () =>
-  new Promise((resolve, reject) => {
-    fetch("https://swappery.site/data.php?qty=1", {
-      method: "GET",
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        resolve(res);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
 const functionGetTokenAction = (sitekey) =>
   new Promise((resolve, reject) => {
     fetch(
@@ -45,7 +35,20 @@ const functionGetTokenAction = (sitekey) =>
       })
       .catch((err) => reject(err));
   });
+const functionheaders = (token) =>
+  new Promise((resolve, reject) => {
+    fetch("https://www.agoda.com", {
+      method: "GET",
+      redirect: "manual",
+    })
+      .then(async (res) => {
+        const $ = cheerio.load(await res.text());
+        const result = res.headers.raw()["set-cookie"];
 
+        resolve(result);
+      })
+      .catch((err) => reject(err));
+  });
 const functionGetRealTokenAction = (id) =>
   new Promise((resolve, reject) => {
     fetch(
@@ -69,8 +72,8 @@ const functionRegist = (resCaptcha, email, name) =>
         password: password,
         authType: "email",
       },
-      firstName: name,
-      lastName: name,
+      firstName: random.first(),
+      lastName: random.last(),
       newsLetter: true,
       captchaVerifyInfo: {
         captchaType: "recaptcha",
@@ -100,12 +103,34 @@ const functionRegist = (resCaptcha, email, name) =>
         resolve(result);
       })
       .catch((err) => reject(err));
+    // .then((res) => res.json())
+    // .then((result) => {
+    //   resolve(result);
+    // })
+    // .catch((err) => reject(err));
   });
 
 const functionClaimApk = (token) =>
   new Promise((resolve, reject) => {
     fetch(
-      "https://www.agoda.com/app/agodacashcampaign?campaignToken=8a126505ef0fcf80769338910e5579f9e19c4b20&refreshOnBack&view=nativeapp",
+      "https://www.agoda.com/app/agodacashcampaign?campaignToken=94e19cf56828527a714e36a3cc38826cbbee36b9&refreshOnBack&view=nativeapp",
+      {
+        redirect: "manual",
+        headers: {
+          Cookie: `token=${token};`,
+        },
+      }
+    )
+      .then((res) => res.text())
+      .then((result) => {
+        resolve(result);
+      })
+      .catch((err) => reject(err));
+  });
+const functionClaimApk2 = (token) =>
+  new Promise((resolve, reject) => {
+    fetch(
+      "https://www.agoda.com/app/agodacashcampaign?campaignToken=94e19cf56828527a714e36a3cc38826cbbee36b9&refreshOnBack&view=nativeapp",
       {
         redirect: "manual",
         headers: {
@@ -123,7 +148,7 @@ const functionClaimApk = (token) =>
 const functionClaimWeb = (token) =>
   new Promise((resolve, reject) => {
     fetch(
-      "https://www.agoda.com/id-id/app/agodacashcampaign?campaignToken=b6ee49c1fc6734aa0eae8b75014cbd3032b1fea3&refreshOnBack=",
+      "https://www.agoda.com/id-id/app/agodacashcampaign?campaignToken=4af9e40d70c640465b3e91ba39771377d3679264&refreshOnBack=",
       {
         redirect: "manual",
         headers: {
@@ -140,21 +165,18 @@ const functionClaimWeb = (token) =>
 function a(index) {
   (async () => {
     for (var i = 0; i < 1; i++) {
+      const kontol = await functionheaders();
+      // console.log(kontol);
       try {
-        const indoName = await generateIndoName();
-        const rand = await randstr(4);
-        const { result } = indoName;
-        const name =
-          result[0].firstname.toLowerCase() +
-          result[0].lastname.toLowerCase() +
-          rand;
-        const email = `${name}}@ptsuroyya.my.id`.toLowerCase();
+        const email = `${random.first()}${await randstr(
+          6
+        )}@ptsejahtera.my.id`.toLowerCase();
 
-        //   console.log(`Mencoba mendapatkan captcha | ${email}`);
+        console.log(`Mencoba mendapatkan captcha | ${email}`);
 
         const linkAccess = "https://www.agoda.com/";
         const actionToken = await functionGetTokenAction(
-          "6LfGHMcZAAAAAAN-k_ejZXRAdcFwT3J-KK6EnzBE"
+          "6Lf9C3IdAAAAAIs6stqpffrA9YdYh6c354db2e_H"
         );
         const requestId = actionToken.split("|")[1];
         console.log("[+] waiting Solved Capctha Anjay");
@@ -167,24 +189,32 @@ function a(index) {
         } while (resultActionToken.request === "CAPCHA_NOT_READY");
 
         const theRealActionToken = resultActionToken.request;
-        // console.log("[+] Captcha Terbypass");
-        const regist = await functionRegist(theRealActionToken, email, name);
-        //   console.log(regist);
+        const regist = await functionRegist(theRealActionToken, email);
         if (regist[0].includes("token")) {
-          //   console.log("[+] Regist berhasil");
-
           const token = regist[0].split(";")[0].split("ul.token=")[1];
-          const claimApk = await functionClaimApk(token);
+          await delay(5000);
+          let claimApk;
+          do {
+            claimApk = await functionClaimApk(token);
+            const ceker = claimApk.split("");
+            validasi = ceker.length;
+          } while (validasi == 0);
 
           if (claimApk) {
-            // console.log("[+] Claim apk sukses");
-
-            const claimWeb = await functionClaimWeb(token);
+            console.log("[+] Claim Apk success");
+            await delay(5000);
+            let claimWeb;
+            do {
+              claimWeb = await functionClaimWeb(token);
+              const ceker = claimWeb.split("");
+              validasi = ceker.length;
+            } while (validasi == 0);
             if (claimWeb) {
-              console.log("[+] Sukses Claim All Rp 144,113");
+              console.log("[+] Claim Web success");
+              await delay(5000);
 
               await fs.appendFile(
-                "resultAgoda.txt",
+                "agodaaccount.txt",
                 `${email}|${password}` + "\r\n",
                 (err) => {
                   if (err) throw err;
@@ -206,12 +236,9 @@ function a(index) {
   })();
 }
 (async () => {
-  //   console.log(
-  //     chalk.yellow(figlet.textSync("Agoda Mazze", { horizontalLayout: "fitted" }))
-  //   );
   console.log(`
             ==========================================================
-            ============== AUTO CRETAE CLIAM X @ CAPTCHA =============
+            ============== AUTO CREATE CLAIM X 2 CAPTCHA =============
             ==========================================================`);
   var jumlahbrowser = readline.question("Jumlah akun : ");
   var hh = parseFloat(jumlahbrowser) - 1;
